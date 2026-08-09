@@ -7,7 +7,7 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 
 export const metadata: Metadata = {
   title: "Legite Game Analysis",
-  description: "Turn padel match video into actionable shot and error analysis.",
+  description: "Private, pose-based padel movement and court-position analysis.",
   other: { "codex-preview": "development" },
   icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
 };
