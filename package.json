@@ -9,15 +9,19 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
-    "test": "next build"
+    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern public/mediapipe",
+    "test": "next build",
+    "prepare:mediapipe": "node scripts/copy-mediapipe-assets.mjs",
+    "predev": "npm run prepare:mediapipe",
+    "prebuild": "npm run prepare:mediapipe"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.112.2",
     "drizzle-orm": "0.45.2",
     "next": "16.2.6",
     "react": "19.2.6",
-    "react-dom": "19.2.6"
+    "react-dom": "19.2.6",
+    "@mediapipe/pose": "0.5.1675469404"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.37.1",
