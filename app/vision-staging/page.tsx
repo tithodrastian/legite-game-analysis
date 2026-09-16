@@ -29,6 +29,17 @@ export default function VisionStagingPage() {
   useEffect(() => () => streamRef.current?.getTracks().forEach((track) => track.stop()), []);
 
   useEffect(() => {
+    if ((step === "identify-self" || step === "identify-partner" || step === "live") && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.muted = true;
+      videoRef.current.setAttribute("playsinline", "true");
+      void videoRef.current.play().catch(() => {
+        setCameraError("Camera sudah mendapat izin, tapi preview diblokir browser. Coba buka langsung di Safari/Chrome, bukan in-app browser.");
+      });
+    }
+  }, [step]);
+
+  useEffect(() => {
     if (step !== "live" || paused) return;
     const timer = window.setInterval(() => {
       setSeconds((value) => value + 1);
@@ -43,16 +54,25 @@ export default function VisionStagingPage() {
 
   async function startCamera() {
     setCameraError("");
+    if (!window.isSecureContext) {
+      setCameraError("Camera web membutuhkan HTTPS. Buka staging langsung melalui link HTTPS.");
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError("Browser ini tidak menyediakan akses camera. Buka link langsung di Safari atau Chrome, bukan browser di dalam aplikasi lain.");
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
         audio: false,
       });
       streamRef.current = stream;
-      if (videoRef.current) videoRef.current.srcObject = stream;
       setStep("identify-self");
     } catch (error) {
-      setCameraError("Camera tidak bisa dibuka. Pastikan izin camera aktif dan akses staging lewat HTTPS.");
+      const name = error instanceof DOMException ? error.name : "CameraError";
+      const message = error instanceof Error ? error.message : "Unknown camera error";
+      setCameraError(`${name}: ${message}. Pastikan izin camera aktif dan buka langsung di Safari/Chrome.`);
     }
   }
 
@@ -82,11 +102,14 @@ export default function VisionStagingPage() {
   }
 
   function reset() {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
     setSeconds(0);
     setPaused(false);
     setSelfTrack(null);
     setPartnerTrack(null);
     setBoxes(initialBoxes);
+    setCameraError("");
     setStep("setup");
   }
 
@@ -117,7 +140,7 @@ export default function VisionStagingPage() {
         <div className="sec">
           <div className="head"><h2>Players</h2><small>{selectedPlayers.length} selected</small></div>
           <div className="player-grid">
-            {players.map((player) => <button key={player} className="player-chip selected" onClick={() => setSelectedPlayers((current) => current.includes(player) ? current.filter((name) => name !== player) : [...current, player])}>
+            {players.map((player) => <button key={player} className={`player-chip ${selectedPlayers.includes(player) ? "selected" : ""}`} onClick={() => setSelectedPlayers((current) => current.includes(player) ? current.filter((name) => name !== player) : [...current, player])}>
               <span>{player}</span><small>{selectedPlayers.includes(player) ? "SELECTED" : "TAP TO ADD"}</small>
             </button>)}
           </div>
@@ -138,6 +161,7 @@ export default function VisionStagingPage() {
           <div><h1>{step === "live" ? "Live Analysis" : "Identify Players"}</h1><small>Back Court · Staging</small></div>
         </div>
 
+        {cameraError && <div className="error">{cameraError}</div>}
         <div className="camera-stage">
           <video ref={videoRef} autoPlay playsInline muted />
           <div className="court-guide" />
